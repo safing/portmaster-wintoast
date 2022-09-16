@@ -3,22 +3,39 @@
 
 using namespace WinToastLib;
 
-static callback_func activatedCallback = NULL;
+static callback_func activatedCallback = nullptr;
+static callback_func dissmisedCallback = nullptr;
+static callback_func failedCallback = nullptr;
 
 class WinToastHandler : public IWinToastHandler
 {
 public:
     WinToastHandler() {}
 
-    void toastActivated() const override {}
+    void toastActivated() const override {
+        if (activatedCallback != nullptr) {
+            // Calling go function
+            activatedCallback(m_id, -1);
+        }
+    }
     void toastActivated(int actionIndex) const override {
-        if(activatedCallback != NULL) {
+        if(activatedCallback != nullptr) {
             // Calling go function
             activatedCallback(m_id, actionIndex);
         }
     }
-    void toastDismissed(WinToastDismissalReason state) const override {}
-    void toastFailed() const override {}
+    void toastDismissed(WinToastDismissalReason state) const override {
+        if (dissmisedCallback != nullptr) {
+            // Calling go function
+            dissmisedCallback(m_id, state);
+        }
+    }
+    void toastFailed() const override {
+        if (failedCallback != nullptr) {
+            // Calling go function
+            failedCallback(m_id, 0);
+        }
+    }
 
     void setID(uint64_t id) {
         m_id = id;
@@ -57,8 +74,13 @@ void* PortmasterToastCreateNotification(const wchar_t *title, const wchar_t *con
     return templ;
 }
 
+void PortmasterToastDeleteNotification(void* notification) {
+    WinToastTemplate *winToastPtr = (WinToastTemplate*)notification;
+    delete winToastPtr;
+}
+
 uint64_t PortmasterToastAddButton(void *notification, wchar_t *buttonText) {
-    if(notification == NULL || buttonText == NULL) {
+    if(notification == nullptr || buttonText == nullptr) {
         return 0;
     }
 
@@ -68,7 +90,7 @@ uint64_t PortmasterToastAddButton(void *notification, wchar_t *buttonText) {
 }
 
 uint64_t PortmasterToastSetImage(void *notification, wchar_t *imagePath) {
-    if(notification == NULL || imagePath == NULL) {
+    if(notification == nullptr || imagePath == nullptr) {
         return 0;
     }
 
@@ -78,15 +100,15 @@ uint64_t PortmasterToastSetImage(void *notification, wchar_t *imagePath) {
 }
 
 uint64_t PortmasterToastShow(void *notification) {
-    if(notification == NULL) {
+    if(notification == nullptr) {
         return -1;
     }
     WinToastTemplate *winToastPtr = (WinToastTemplate*) notification;
     
     auto handler = std::make_shared<WinToastHandler>();
     int64_t toastID = WinToast::instance()->showToast(*winToastPtr, handler);
+
     handler->setID(toastID);
-    delete winToastPtr;
     return toastID; // -1 for error
 }
 
@@ -100,10 +122,28 @@ uint64_t PortmasterToastHide(uint64_t notificationID) {
 }
 
 uint64_t PortmasterToastActivatedCallback(callback_func func) {
-    if(func == NULL) {
+    if(func == nullptr) {
         return 0;
     }
     
     activatedCallback = func;
+    return 1;
+}
+
+uint64_t PortmasterToastDismissedCallback(callback_func func) {
+    if (func == nullptr) {
+        return 0;
+    }
+
+    dissmisedCallback = func;
+    return 1;
+}
+
+uint64_t PortmasterToastFailedCallback(callback_func func) {
+    if (func == nullptr) {
+        return 0;
+    }
+
+    failedCallback = func;
     return 1;
 }

@@ -13,10 +13,10 @@
  * @brief notification callback
  *
  * @par    id      = id of the notification
- * @par    company = index of the clicked button
+ * @par    action  = index of the clicked button or reason for dismissal or 0 for failed callback
  * @return return value is ignored it is used only for compatability
 **/
-typedef uint64_t(*callback_func)(uint64_t id, int actionIndex);
+typedef uint64_t(*callback_func)(uint64_t id, int action);
 
 /**
  * @brief Initialize notifications
@@ -43,9 +43,17 @@ EXPORT uint64_t PortmasterToastIsInitialized();
  * @par    title      = title of the notification
  * @par    content    = text content of the notification
  * @return pointer to the notification object
- * @note PortmasterToastShow must be always called after create or there will be memory leak 
+ * @note PortmasterToastDeleteNotification must be called always after create or there will be memory leak 
  */
-EXPORT void*    PortmasterToastCreateNotification(const wchar_t* title, const wchar_t* content);
+EXPORT void* PortmasterToastCreateNotification(const wchar_t* title, const wchar_t* content);
+
+
+/**
+ * @brief deletes a notification object
+ * @par    notification = pointer to notification
+ * @note Must be called on PortmasterToastCreateNotification return value
+ */
+EXPORT void PortmasterToastDeleteNotification(void *notification);
 
 /**
  * @brief adds a button to the notification
@@ -67,7 +75,6 @@ EXPORT uint64_t PortmasterToastSetImage(void *notification, wchar_t *imagePath);
  * @brief make a request to the OS to show the notification
  * @par    notification = pointer to a notification object
  * @return Id of the notification or -1 for failure
- * @note This will delete the notification memory after sending the notification request to the OS. Setup PortmasterToastActivatedCallback if you want to get callback from the notification interaction.
  */
 EXPORT uint64_t PortmasterToastShow(void *notification);
 
@@ -80,10 +87,29 @@ EXPORT uint64_t PortmasterToastHide(uint64_t notificationID);
 
 /**
  * @brief set callback function that well be called when notification button is clicked
+ *		  Or if the notification is clicked. In that case the action id will be -1 
  * @par    func = pointer to a valid function see callback_func type
  * @return 1 for success 0 for failure
  */
 EXPORT uint64_t PortmasterToastActivatedCallback(callback_func func);
+
+/**
+ * @brief set callback function that well be called when notification is dismissed
+ *			0 -> UserCanceled 
+ *			1 -> ApplicationHidden
+ *			2 -> TimedOut
+ * @par    func = pointer to a valid function see callback_func type
+ * @return 1 for success 0 for failure
+ */
+EXPORT uint64_t PortmasterToastDismissedCallback(callback_func func);
+
+/**
+ * @brief set callback function that well be called if the notification failed
+ *		   
+ * @par    func = pointer to a valid function see callback_func type
+ * @return 1 for success 0 for failure
+ */
+EXPORT uint64_t PortmasterToastFailedCallback(callback_func func);
 
 
 #endif // NOTIFICATION_GLUE_H
