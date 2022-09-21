@@ -68,8 +68,7 @@ void* PortmasterToastCreateNotification(const wchar_t *title, const wchar_t *con
     templ->setTextField(content, WinToastTemplate::SecondLine);
 
     templ->setDuration(WinToastTemplate::Duration::Long);
-    templ->setAudioOption(WinToastTemplate::AudioOption::Default);
-    templ->setAudioPath(WinToastTemplate::AudioSystemFile::Call1);
+
 
     return templ;
 }
@@ -96,6 +95,16 @@ uint64_t PortmasterToastSetImage(void *notification, wchar_t *imagePath) {
 
     WinToastTemplate *winToastPtr = (WinToastTemplate*) notification;
     winToastPtr->setImagePath(imagePath);
+    return 1;
+}
+
+uint64_t PortmasterToastSetNotificationSound(void *notification, int option, int file) {
+    if(notification == nullptr) {
+        return 0;
+    }
+    WinToastTemplate *winToastPtr = (WinToastTemplate*) notification;
+    winToastPtr->setAudioOption((WinToastTemplate::AudioOption) option);
+    winToastPtr->setAudioPath((WinToastTemplate::AudioSystemFile) file);
     return 1;
 }
 
