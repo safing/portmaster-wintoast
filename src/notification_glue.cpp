@@ -44,17 +44,14 @@ private:
     uint64_t m_id;
 };
 
-uint64_t PortmasterToastInitialize(const wchar_t *appName, const wchar_t *company, const wchar_t *productName, const wchar_t *subProduct, const wchar_t *versionInfo) {
+uint64_t PortmasterToastInitialize(const wchar_t *appName, const wchar_t *aumi) {
     WinToast::instance()->setAppName(appName);
-    const auto aumi = WinToast::configureAUMI(company, productName, subProduct, versionInfo);
-    WinToast::instance()->setAppUserModelId(aumi);
+    WinToast::instance()->setAppUserModelId(aumi); //(L"io.safing.portmaster");
+    WinToast::instance()->setShortcutPolicy(WinToast::SHORTCUT_POLICY_REQUIRE_NO_CREATE);
 
-    WinToast::WinToastError error;
-    if (!WinToast::instance()->initialize(&error)) {
-        return 0;
-    }
-
-    return 1;
+    WinToast::WinToastError error = WinToast::NoError;
+    WinToast::instance()->initialize(&error);
+    return error;
 }
 
 uint64_t PortmasterToastIsInitialized() {
@@ -68,7 +65,6 @@ void* PortmasterToastCreateNotification(const wchar_t *title, const wchar_t *con
     templ->setTextField(content, WinToastTemplate::SecondLine);
 
     templ->setDuration(WinToastTemplate::Duration::Long);
-
 
     return templ;
 }
