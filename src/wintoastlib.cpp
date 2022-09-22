@@ -383,7 +383,6 @@ void WinToast::setAppName(_In_ const std::wstring& appName) {
     m_appName = appName;
 }
 
-
 void WinToast::setAppUserModelId(_In_ const std::wstring& aumi) {
     m_aumi = aumi;
     DEBUG_MSG(L"Default App User Model Id: " << m_aumi.c_str());
@@ -449,25 +448,7 @@ enum WinToast::ShortcutResult WinToast::createShortcut() {
         return SHORTCUT_MISSING_PARAMETERS;
     }
 
-    if (!isCompatible()) {
-        DEBUG_MSG(L"Your OS is not compatible with this library!");
-        return SHORTCUT_INCOMPATIBLE_OS;
-    }
-
-    if (!m_hasCoInitialized) {
-        HRESULT initHr = CoInitializeEx(nullptr, COINIT::COINIT_MULTITHREADED);
-        if (initHr != RPC_E_CHANGED_MODE) {
-            if (FAILED(initHr) && initHr != S_FALSE) {
-                DEBUG_MSG(L"Error on COM library initialization!");
-                return SHORTCUT_COM_INIT_FAILURE;
-            }
-            else {
-                m_hasCoInitialized = true;
-            }
-        }
-    }
-
-    bool wasChanged;
+    bool wasChanged = false;
     HRESULT hr = validateShellLinkHelper(wasChanged);
     if (SUCCEEDED(hr))
         return wasChanged ? SHORTCUT_WAS_CHANGED : SHORTCUT_UNCHANGED;
@@ -491,6 +472,24 @@ bool WinToast::initialize(_Out_opt_ WinToastError* error) {
         setError(error, WinToastError::InvalidParameters);
         DEBUG_MSG(L"Error while initializing, did you set up a valid AUMI and App name?");
         return false;
+    }
+
+    if (!isCompatible()) {
+        DEBUG_MSG(L"Your OS is not compatible with this library!");
+        return false;
+    }
+
+    if (!m_hasCoInitialized) {
+        HRESULT initHr = CoInitializeEx(nullptr, COINIT::COINIT_MULTITHREADED);
+        if (initHr != RPC_E_CHANGED_MODE) {
+            if (FAILED(initHr) && initHr != S_FALSE) {
+                DEBUG_MSG(L"Error on COM library initialization!");
+                return false;
+            }
+            else {
+                m_hasCoInitialized = true;
+            }
+        }
     }
 
     if (m_shortcutPolicy != SHORTCUT_POLICY_IGNORE) {

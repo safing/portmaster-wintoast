@@ -21,15 +21,12 @@ typedef uint64_t(*callback_func)(uint64_t id, int action);
 /**
  * @brief Initialize notifications
  *
- * @par    appName      = application name, appears in the notification header
- * @par    company      = company name used for notification metadata
- * @par    productName  = product name used for notification metadata
- * @par    subProduct   = sub product name used for notification metadata
- * @par    versionInfo  = version info used for notification metadata
+ * @par    appName  = application name, appears in the notification header
+ * @par    aumi     = Application User Mode ID. Identifer that should be set in the Portmaster start menu shortcut
  * @return 1 on success 0 on failure 
  *
  */
-EXPORT uint64_t PortmasterToastInitialize(const wchar_t* appName, const wchar_t* company, const wchar_t* productName, const wchar_t* subProduct, const wchar_t* versionInfo);
+EXPORT uint64_t PortmasterToastInitialize(const wchar_t* appName, const wchar_t* aumi);
 
 /**
  * @brief check if notifications are initialized
