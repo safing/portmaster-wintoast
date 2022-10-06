@@ -47,7 +47,7 @@ private:
 uint64_t PortmasterToastInitialize(const wchar_t *appName, const wchar_t *aumi) {
     WinToast::instance()->setAppName(appName);
     WinToast::instance()->setAppUserModelId(aumi);
-    WinToast::instance()->setShortcutPolicy(WinToast::SHORTCUT_POLICY_REQUIRE_NO_CREATE);
+    WinToast::instance()->setShortcutPolicy(WinToast::SHORTCUT_POLICY_IGNORE);
 
     WinToast::WinToastError error = WinToast::NoError;
     WinToast::instance()->initialize(&error);
