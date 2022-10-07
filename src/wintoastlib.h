@@ -24,6 +24,7 @@
 #include <sdkddkver.h>
 #include <WinUser.h>
 #include <ShObjIdl.h>
+#include <wrl.h>
 #include <wrl/implements.h>
 #include <wrl/event.h>
 #include <windows.ui.notifications.h>
@@ -45,6 +46,8 @@ using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::UI::Notifications;
 using namespace Windows::Foundation;
 
+// unique class ID for the application
+#define NOTIFICATION_CALLBACK_CLSID "7F00FB48-65D5-4BA8-A35B-F194DA7E1A51"
 
 namespace WinToastLib {
 
@@ -210,6 +213,7 @@ namespace WinToastLib {
         void setAppUserModelId(_In_ const std::wstring &aumi);
         void setAppName(_In_ const std::wstring &appName);
         void setShortcutPolicy(_In_ ShortcutPolicy policy);
+        HRESULT validateShellLinkHelper(_Out_ bool& wasChanged);
 
     protected:
         bool                                            m_isInitialized{false};
@@ -219,7 +223,6 @@ namespace WinToastLib {
         std::wstring                                    m_aumi{};
         std::map<INT64, ComPtr<IToastNotification>>     m_buffer{};
 
-        HRESULT validateShellLinkHelper(_Out_ bool& wasChanged);
         HRESULT createShellLinkHelper();
         HRESULT setImageFieldHelper(_In_ IXmlDocument *xml, _In_ const std::wstring& path);
         HRESULT setAudioFieldHelper(_In_ IXmlDocument *xml, _In_ const std::wstring& path, _In_opt_ WinToastTemplate::AudioOption option = WinToastTemplate::AudioOption::Default);
@@ -232,4 +235,38 @@ namespace WinToastLib {
         void setError(_Out_opt_ WinToastError *error, _In_ WinToastError value);
     };
 }
+
+typedef struct {} NOTIFICATION_USER_INPUT_DATA;
+
+MIDL_INTERFACE("53E31837-6600-4A81-9395-75CFFE746F94")
+INotificationActivationCallback : public IUnknown
+{
+public:
+   virtual HRESULT STDMETHODCALLTYPE Activate(
+           __RPC__in_string LPCWSTR appUserModelId, __RPC__in_opt_string LPCWSTR invokedArgs,
+           __RPC__in_ecount_full_opt(count) const NOTIFICATION_USER_INPUT_DATA * data,
+           ULONG count) = 0;
+};
+
+// The UUID CLSID must be unique to your app. Create a new GUID if copying this code.
+class DECLSPEC_UUID(NOTIFICATION_CALLBACK_CLSID) NotificationActivator WrlSealed WrlFinal
+    : public Microsoft::WRL::RuntimeClass<
+    Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
+    INotificationActivationCallback>
+{
+public:
+   virtual HRESULT STDMETHODCALLTYPE Activate(
+       _In_ LPCWSTR appUserModelId,
+       _In_ LPCWSTR invokedArgs,
+       _In_reads_(dataCount) const NOTIFICATION_USER_INPUT_DATA * data,
+       ULONG dataCount) override
+   {
+       // Not used
+       return S_OK;
+   }
+};
+
+// Flag class as COM creatable
+CoCreatableClass(NotificationActivator);
+
 #endif // WINTOASTLIB_H
