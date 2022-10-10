@@ -534,7 +534,7 @@ bool WinToast::initialize(_Out_opt_ WinToastError* error) {
     
     HRESULT hr = RegisterComServer(ST_STRINGIFY(NOTIFICATION_CALLBACK_CLSID));
     if (FAILED(hr)) {
-        DEBUG_MSG(L"Error while initializng the Com Server");
+        DEBUG_MSG(L"Error while initializing the Com Server");
         return false;
     }
 
