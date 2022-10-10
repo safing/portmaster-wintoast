@@ -75,7 +75,7 @@ EXPORT uint64_t PortmasterToastSetImage(void *notification, wchar_t *imagePath);
  * @par    file     = 0-25 (DefaultSound, IM, Mail, Reminder, SMS, Alarm, Alarm2, Alarm3, Alarm4, Alarm5, Alarm6, Alarm7, Alarm8, Alarm9, Alarm10, Call, Call1, Call2, Call3, Call4, Call5, Call6, Call7, Call8, Call9, Call10)
  * @return 1 for success 0 for failure
  */
-EXPORT uint64_t PortmasterToastSetNotificationSound(void *notification, int option, int file);
+EXPORT uint64_t PortmasterToastSetSound(void *notification, int option, int file);
 
 /**
  * @brief make a request to the OS to show the notification

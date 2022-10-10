@@ -18,6 +18,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <wrl\wrappers\corewrappers.h>
 #include "wintoastlib.h"
 #include <assert.h>
 #include <unordered_map>
@@ -25,6 +26,10 @@
 
 #pragma comment(lib,"shlwapi")
 #pragma comment(lib,"user32")
+#pragma comment(lib,"runtimeobject")
+
+#define ST_WSTRINGIFY(X) L##X
+#define ST_STRINGIFY(X) ST_WSTRINGIFY(X)
 
 #ifdef NDEBUG
     #define DEBUG_MSG(str) do { } while ( false )
@@ -65,8 +70,7 @@ namespace DllImporter {
     static f_WindowsCreateStringReference               WindowsCreateStringReference;
     static f_WindowsGetStringRawBuffer                  WindowsGetStringRawBuffer;
     static f_WindowsDeleteString                        WindowsDeleteString;
-
-
+  
     template<class T>
     _Check_return_ __inline HRESULT _1_GetActivationFactory(_In_ HSTRING activatableClassId, _COM_Outptr_ T** factory) {
         return RoGetActivationFactory(activatableClassId, IID_INS_ARGS(factory));
@@ -375,6 +379,8 @@ WinToast::WinToast() :
 
 WinToast::~WinToast() {
     if (m_hasCoInitialized) {
+        Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().DecrementObjectCount();
+        Module<OutOfProc>::GetModule().UnregisterObjects();
         CoUninitialize();
     }
 }
@@ -457,6 +463,40 @@ enum WinToast::ShortcutResult WinToast::createShortcut() {
     return SUCCEEDED(hr) ? SHORTCUT_WAS_CREATED : SHORTCUT_CREATE_FAILED;
 }
 
+HRESULT RegisterComServer(const wchar_t clsid[]) {
+    std::wstring clsidStr(clsid);
+
+    // Create the subkey
+    // Something like SOFTWARE\Classes\CLSID\{23A5B06E-20BB-4E7E-A0AC-6982ED6A6041}\LocalServer32
+    std::wstring subKey = LR"(SOFTWARE\Classes\CLSID\)" + clsidStr + LR"(\LocalServer32)";
+
+    // Register the CLSID for the COM server. Path to the EXE can also be set here if requerd.
+    HRESULT hr = HRESULT_FROM_WIN32(::RegSetKeyValue(
+        HKEY_CURRENT_USER,
+        subKey.c_str(),
+        nullptr,
+        REG_SZ,
+        nullptr,
+        0));
+
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    // Module<OutOfProc> needs a callback registered before it can be used.
+    // Since we don't care about when it shuts down, we'll pass an empty lambda here.
+    Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::Create([] {});
+
+    // If a local server process only hosts the COM object then COM expects
+    // the COM server host to shutdown when the references drop to zero.
+    // Since the user might still be using the program after activating the notification,
+    // we don't want to shutdown immediately.  Incrementing the object count tells COM that
+    // we aren't done yet.
+    Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().IncrementObjectCount();
+
+    return Module<OutOfProc>::GetModule().RegisterObjects();
+}
+
 bool WinToast::initialize(_Out_opt_ WinToastError* error) {
     m_isInitialized = false;
     setError(error, WinToastError::NoError);
@@ -491,18 +531,24 @@ bool WinToast::initialize(_Out_opt_ WinToastError* error) {
             }
         }
     }
+    
+    HRESULT hr = RegisterComServer(ST_STRINGIFY(NOTIFICATION_CALLBACK_CLSID));
+    if (FAILED(hr)) {
+        DEBUG_MSG(L"Error while initializing the Com Server");
+        return false;
+    }
 
     if (m_shortcutPolicy != SHORTCUT_POLICY_IGNORE) {
         if (createShortcut() < 0) {
             setError(error, WinToastError::ShellLinkNotCreated);
-            DEBUG_MSG(L"Error while attaching the AUMI to the current proccess =(");
+            DEBUG_MSG(L"Error while attaching the AUMI to the current proccess");
             return false;
         }
     }
 
     if (FAILED(DllImporter::SetCurrentProcessExplicitAppUserModelID(m_aumi.c_str()))) {
         setError(error, WinToastError::InvalidAppUserModelID);
-        DEBUG_MSG(L"Error while attaching the AUMI to the current proccess =(");
+        DEBUG_MSG(L"Error while attaching the AUMI to the current proccess");
         return false;
     }
 
@@ -759,11 +805,11 @@ bool WinToast::hideToast(_In_ INT64 id) {
     if (m_buffer.find(id) != m_buffer.end()) {
         auto succeded = false;
         auto notify = notifier(&succeded);
-		if (succeded) {
-            auto result = notify->Hide(m_buffer[id].Get());
-            m_buffer.erase(id);
-            return SUCCEEDED(result);
-		}
+	    if (succeded) {
+                auto result = notify->Hide(m_buffer[id].Get());
+                m_buffer.erase(id);
+                return SUCCEEDED(result);
+	    }
 	}
     return false;
 }

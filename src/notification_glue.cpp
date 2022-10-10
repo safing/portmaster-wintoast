@@ -94,7 +94,7 @@ uint64_t PortmasterToastSetImage(void *notification, wchar_t *imagePath) {
     return 1;
 }
 
-uint64_t PortmasterToastSetNotificationSound(void *notification, int option, int file) {
+uint64_t PortmasterToastSetSound(void *notification, int option, int file) {
     if(notification == nullptr) {
         return 0;
     }
@@ -108,8 +108,8 @@ uint64_t PortmasterToastShow(void *notification) {
     if(notification == nullptr) {
         return -1;
     }
+
     WinToastTemplate *winToastPtr = (WinToastTemplate*) notification;
-    
     auto handler = std::make_shared<WinToastHandler>();
     int64_t toastID = WinToast::instance()->showToast(*winToastPtr, handler);
 
