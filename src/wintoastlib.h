@@ -46,7 +46,7 @@ using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::UI::Notifications;
 using namespace Windows::Foundation;
 
-// unique class ID for the application
+// Unique class ID for the application. It must be also set in the shortcut.
 #define NOTIFICATION_CALLBACK_CLSID "7F00FB48-65D5-4BA8-A35B-F194DA7E1A51"
 
 namespace WinToastLib {
@@ -236,6 +236,9 @@ namespace WinToastLib {
     };
 }
 
+// The fallowing code registers a callback for the notifications, it is requerd when the CLSID (Class ID) is set in the shortcut.
+// Windows will be able to execute the callback even if the application is closed
+// Note that the callback is not complete the Activete function is empty, noting will hapen if the application is closed.
 typedef struct {} NOTIFICATION_USER_INPUT_DATA;
 
 MIDL_INTERFACE("53E31837-6600-4A81-9395-75CFFE746F94")
@@ -248,7 +251,6 @@ public:
            ULONG count) = 0;
 };
 
-// The UUID CLSID must be unique to your app. Create a new GUID if copying this code.
 class DECLSPEC_UUID(NOTIFICATION_CALLBACK_CLSID) NotificationActivator WrlSealed WrlFinal
     : public Microsoft::WRL::RuntimeClass<
     Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
@@ -261,7 +263,7 @@ public:
        _In_reads_(dataCount) const NOTIFICATION_USER_INPUT_DATA * data,
        ULONG dataCount) override
    {
-       // Not used
+       // Not used but requerd for the callbacks to work with CLSID
        return S_OK;
    }
 };

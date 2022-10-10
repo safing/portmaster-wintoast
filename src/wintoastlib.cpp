@@ -379,6 +379,8 @@ WinToast::WinToast() :
 
 WinToast::~WinToast() {
     if (m_hasCoInitialized) {
+        Microsoft::WRL::Module<Microsoft::WRL::OutOfProc>::GetModule().DecrementObjectCount();
+        Module<OutOfProc>::GetModule().UnregisterObjects();
         CoUninitialize();
     }
 }
@@ -468,7 +470,7 @@ HRESULT RegisterComServer(const wchar_t clsid[]) {
     // Something like SOFTWARE\Classes\CLSID\{23A5B06E-20BB-4E7E-A0AC-6982ED6A6041}\LocalServer32
     std::wstring subKey = LR"(SOFTWARE\Classes\CLSID\)" + clsidStr + LR"(\LocalServer32)";
 
-    // Register the EXE for the COM server
+    // Register the CLSID for the COM server. Path to the EXE can also be set here if requerd.
     HRESULT hr = HRESULT_FROM_WIN32(::RegSetKeyValue(
         HKEY_CURRENT_USER,
         subKey.c_str(),
