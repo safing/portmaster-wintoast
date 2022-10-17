@@ -468,19 +468,23 @@ HRESULT RegisterComServer(const wchar_t clsid[]) {
 
     // Create the subkey
     // Something like SOFTWARE\Classes\CLSID\{23A5B06E-20BB-4E7E-A0AC-6982ED6A6041}\LocalServer32
-    std::wstring subKey = LR"(SOFTWARE\Classes\CLSID\)" + clsidStr + LR"(\LocalServer32)";
+    std::wstring subKey = LR"(SOFTWARE\Classes\CLSID\{)" + clsidStr + LR"(}\LocalServer32)";
+    
+    wchar_t exePath[MAX_PATH];
+    DWORD pathLength = ::GetModuleFileName(nullptr, exePath, ARRAYSIZE(exePath));
 
-    // Register the CLSID for the COM server. Path to the EXE can also be set here if requerd.
-    HRESULT hr = HRESULT_FROM_WIN32(::RegSetKeyValue(
-        HKEY_CURRENT_USER,
-        subKey.c_str(),
-        nullptr,
-        REG_SZ,
-        nullptr,
-        0));
+    if(pathLength > 0) {
+        std::wstring exePathStr = L"\"" + std::wstring(exePath) + L"\"";
+        DWORD dataSize = static_cast<DWORD>((exePathStr.length() + 1) * sizeof(wchar_t));
 
-    if (FAILED(hr)) {
-        return hr;
+        // Register the CLSID for the COM server.
+        HRESULT hr = HRESULT_FROM_WIN32(::RegSetKeyValue(
+            HKEY_CURRENT_USER,
+            subKey.c_str(),
+            nullptr,
+            REG_SZ,
+            reinterpret_cast<const BYTE*>(exePathStr.c_str()),
+            dataSize));
     }
 
     // Module<OutOfProc> needs a callback registered before it can be used.
