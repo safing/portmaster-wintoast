@@ -46,9 +46,6 @@ using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::UI::Notifications;
 using namespace Windows::Foundation;
 
-// Unique class ID for the application. It must be also set in the shortcut.
-#define NOTIFICATION_CALLBACK_CLSID "7F00FB48-65D5-4BA8-A35B-F194DA7E1A51"
-
 namespace WinToastLib {
 
     class IWinToastHandler {
@@ -214,6 +211,7 @@ namespace WinToastLib {
         void setAppName(_In_ const std::wstring &appName);
         void setShortcutPolicy(_In_ ShortcutPolicy policy);
         HRESULT validateShellLinkHelper(_Out_ bool& wasChanged);
+        void setShellLinkToCopy(_In_ const std::wstring& path);
 
     protected:
         bool                                            m_isInitialized{false};
@@ -222,6 +220,7 @@ namespace WinToastLib {
         std::wstring                                    m_appName{};
         std::wstring                                    m_aumi{};
         std::map<INT64, ComPtr<IToastNotification>>     m_buffer{};
+        std::wstring                                    m_originalShellLinkPath;
 
         HRESULT createShellLinkHelper();
         HRESULT setImageFieldHelper(_In_ IXmlDocument *xml, _In_ const std::wstring& path);
@@ -235,40 +234,5 @@ namespace WinToastLib {
         void setError(_Out_opt_ WinToastError *error, _In_ WinToastError value);
     };
 }
-
-// The fallowing code registers a callback for the notifications, it is requerd when the CLSID (Class ID) is set in the shortcut.
-// Windows will be able to execute the callback even if the application is closed
-// Note that the callback is not complete the Activete function is empty, noting will hapen if the application is closed.
-typedef struct {} NOTIFICATION_USER_INPUT_DATA;
-
-MIDL_INTERFACE("53E31837-6600-4A81-9395-75CFFE746F94")
-INotificationActivationCallback : public IUnknown
-{
-public:
-   virtual HRESULT STDMETHODCALLTYPE Activate(
-           __RPC__in_string LPCWSTR appUserModelId, __RPC__in_opt_string LPCWSTR invokedArgs,
-           __RPC__in_ecount_full_opt(count) const NOTIFICATION_USER_INPUT_DATA * data,
-           ULONG count) = 0;
-};
-
-class DECLSPEC_UUID(NOTIFICATION_CALLBACK_CLSID) NotificationActivator WrlSealed WrlFinal
-    : public Microsoft::WRL::RuntimeClass<
-    Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
-    INotificationActivationCallback>
-{
-public:
-   virtual HRESULT STDMETHODCALLTYPE Activate(
-       _In_ LPCWSTR appUserModelId,
-       _In_ LPCWSTR invokedArgs,
-       _In_reads_(dataCount) const NOTIFICATION_USER_INPUT_DATA * data,
-       ULONG dataCount) override
-   {
-       // Not used but requerd for the callbacks to work with CLSID
-       return S_OK;
-   }
-};
-
-// Flag class as COM creatable
-CoCreatableClass(NotificationActivator);
 
 #endif // WINTOASTLIB_H

@@ -44,11 +44,12 @@ private:
     uint64_t m_id;
 };
 
-uint64_t PortmasterToastInitialize(const wchar_t *appName, const wchar_t *aumi) {
+uint64_t PortmasterToastInitialize(const wchar_t *appName, const wchar_t *aumi, const wchar_t* originalShortcutPath) {
     WinToast::instance()->setAppName(appName);
-    WinToast::instance()->setAppUserModelId(aumi);
-    WinToast::instance()->setShortcutPolicy(WinToast::SHORTCUT_POLICY_IGNORE);
-
+    WinToast::instance()->setAppUserModelId(L"test.amui");
+    WinToast::instance()->setShellLinkToCopy(originalShortcutPath);
+    WinToast::instance()->setShortcutPolicy(WinToast::SHORTCUT_POLICY_REQUIRE_CREATE);
+    
     WinToast::WinToastError error = WinToast::NoError;
     WinToast::instance()->initialize(&error);
     return error;
